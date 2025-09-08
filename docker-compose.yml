@@ -8,5 +8,5 @@ services:
       # Monta el código fuente de tu proyecto en el directorio web del contenedor
       - ./:/var/www/html/
     ports:
-      # Expone el puerto 80 del contenedor en el puerto 8080 de tu máquina
+      # Expone el puerto 80 del contenedor en el puerto 8090 de tu máquina
       - "8090:80"
