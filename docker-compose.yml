@@ -1,0 +1,12 @@
+services:
+  # Servicio para Apache y PHP
+  apache-php:
+    image: php:8.2-apache
+    container_name: mi_proyecto_php
+    restart: unless-stopped
+    volumes:
+      # Monta el código fuente de tu proyecto en el directorio web del contenedor
+      - ./:/var/www/html/
+    ports:
+      # Expone el puerto 80 del contenedor en el puerto 8080 de tu máquina
+      - "8090:80"

@@ -1,0 +1,18 @@
+Plan de Desarrollo del Proyecto
+
+## Mejoras Realizadas
+
+1.  **Centralización de Credenciales (2025-08-27):**
+    *   Se ha creado un archivo `.env` para almacenar las credenciales de usuario fuera del código fuente.
+    *   Se ha añadido la dependencia `vlucas/phpdotenv` para gestionar las variables de entorno.
+    *   Se ha modificado `login.php` para autenticar a los usuarios utilizando las credenciales del archivo `.env`.
+
+2.  **Refactorización de CSS (2025-08-27):**
+    *   Se han extraído los estilos CSS del archivo `index.php`.
+    *   Se ha creado un nuevo archivo `style.css` para alojar los estilos de la página de login.
+    *   Se ha actualizado `index.php` para enlazar la hoja de estilos externa.
+
+## Mejoras Proyectadas
+
+*   Refactorizar el código de carga de variables de entorno a un archivo de configuración central (ej. `bootstrap.php`) para ser reutilizado en otras partes del sistema si es necesario.
+*   Implementar un sistema de roles y permisos más granular si la aplicación crece en complejidad.
