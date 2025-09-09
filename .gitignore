@@ -1,2 +1,6 @@
 .env
+vendor
+automatizacion/vendor
+ec/vendor
+pe/vendor
 __pycache__/
