@@ -94,7 +94,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
                         <div class="tab-pane fade show active" id="herramienta-1" role="tabpanel" aria-labelledby="herramienta-1-tab">
                             <h3 class="text-xl font-bold text-center mt-4 mb-2">Descripción de la Herramienta 1</h3>
                             <p class="text-center text-red-500 font-bold text-sm mb-4">Sube un archivo para comenzar el análisis.</p>
-                            <form id="form-herramienta-1" action="procesar_herramienta_1.php" method="post" enctype="multipart/form-data" class="mt-4">
+                            <form id="form-herramienta-1" action="analizar_rec_unico.php" method="post" enctype="multipart/form-data" class="mt-4">
                                 <div class="mb-4">
                                     <label for="archivo_auto" class="form-label block text-sm font-medium text-gray-700 mb-2">Selecciona un archivo Excel (.xls o .xlsx)</label>
                                     <input class="form-control block w-full px-3 py-2 text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" type="file" id="archivo_auto" name="archivo_auto" accept=".xls, .xlsx" required>
@@ -154,7 +154,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 
             function setupFormListeners() {
                 document.getElementById('form-herramienta-1').addEventListener('submit', function(event) {
-                    handleFormSubmit(event, 'herramienta-1', 'procesar_herramienta_1.php');
+                    handleFormSubmit(event, 'herramienta-1', 'analizar_rec_unico.php');
                 });
             }
 

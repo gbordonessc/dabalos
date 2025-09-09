@@ -1,12 +1,3 @@
-<?php
-session_start();
-
-// Si el usuario no ha iniciado sesión, lo redirige a la página de login
-if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
-    header('Location: ../index.php');
-    exit;
-}
-?>
 <!DOCTYPE html>
 <html lang="es" class="h-full">
 <head>
@@ -67,7 +58,6 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     </style>
 </head>
 <body class="h-full bg-gray-100 flex flex-col items-center justify-center">
-
     <div id="main-content" class="bg-serviciocivil h-full w-full flex items-center justify-center p-4">
         <div class="bg-white p-8 md:p-10 rounded-xl shadow-lg w-full max-w-7xl">
             <div class="flex justify-between items-center mb-6">
@@ -94,6 +84,9 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="concurso-atributos-tab-emp" data-bs-toggle="tab" data-bs-target="#concurso-atributos-emp" type="button" role="tab" aria-controls="concurso-atributos-emp" aria-selected="false">Historial Concurso Atributos</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="reclutamiento-individual-tab" data-bs-toggle="tab" data-bs-target="#reclutamiento-individual" type="button" role="tab" aria-controls="reclutamiento-individual" aria-selected="false">CC Reclutamiento Individual</button>
                         </li>
                     </ul>
                     <div class="tab-content" id="subTabEmpresasContent">
@@ -146,6 +139,21 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
                                 </div>
                             </form>
                         </div>
+                        <div class="tab-pane fade" id="reclutamiento-individual" role="tabpanel" aria-labelledby="reclutamiento-individual-tab">
+                            <h3 class="text-xl font-bold text-center mt-4 mb-2">Análisis de Reclutamiento Individual</h3>
+                            <p class="text-center text-red-500 font-bold text-sm mb-4">Funcionalidad para análisis de reclutamiento individual.</p>
+                            <form id="form-reclutamiento-individual" action="analizar_reclutamiento_individual.php" method="post" enctype="multipart/form-data" class="mt-4">
+                                <div class="mb-4">
+                                    <label for="archivo_ri" class="form-label block text-sm font-medium text-gray-700 mb-2">Selecciona un archivo Excel (.xls o .xlsx)</label>
+                                    <input class="form-control block w-full px-3 py-2 text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" type="file" id="archivo_ri" name="archivo_ri" accept=".xls, .xlsx" required>
+                                </div>
+                                <div>
+                                    <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                        Analizar Reclutamiento
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -161,7 +169,6 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
             }
         }
     
-        // Función para inicializar las pestañas
         function initTabs(containerId, localStorageKey) {
             var tabContainer = document.getElementById(containerId);
             if (!tabContainer) return;
@@ -202,6 +209,9 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
                 document.getElementById('form-concurso-atributos-emp').addEventListener('submit', function(event) {
                     handleFormSubmit(event, 'concurso-atributos-emp', 'analizar_atributos.php');
                 });
+                document.getElementById('form-reclutamiento-individual').addEventListener('submit', function(event) {
+                    handleFormSubmit(event, 'reclutamiento-individual', 'analizar_reclutamiento_individual.php');
+                });
             }
 
             showMainContent();
@@ -221,39 +231,55 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
                 event.preventDefault();
                 var form = event.target;
                 var formData = new FormData(form);
-                var fileInputs = fileInputNames ? fileInputNames.map(name => document.getElementById(name)) : document.querySelectorAll('#' + form.id + ' input[type="file"]');
+                var fileInputs = document.querySelectorAll('#' + form.id + ' input[type="file"]');
                 var uploadedFileNames = [];
-                var hasEmptyFile = false;
 
-                for (var i = 0; i < fileInputs.length; i++) {
-                    if (fileInputs[i].files.length === 0) {
-                        hasEmptyFile = true;
-                        break;
+                if (isMulti) {
+                    // Validations for multiconcurso form
+                    var hasEmptyFile = false;
+                    for (var i = 0; i < fileInputs.length; i++) {
+                        if (fileInputs[i].files.length === 0) {
+                            hasEmptyFile = true;
+                            break;
+                        }
+                        var fileName = fileInputs[i].files[0].name;
+                        if (uploadedFileNames.includes(fileName)) {
+                            alert('Error: No puedes subir el mismo archivo (' + fileName + ') más de una vez.');
+                            return;
+                        }
+                        uploadedFileNames.push(fileName);
                     }
-                    var fileName = fileInputs[i].files[0].name;
-                    if (isMulti && uploadedFileNames.includes(fileName)) {
-                        alert('Error: No puedes subir el mismo archivo (' + fileName + ') más de una vez.');
+                    if (hasEmptyFile) {
+                        alert('Error: Por favor, selecciona un archivo para cada campo de subida.');
                         return;
                     }
-                    uploadedFileNames.push(fileName);
                 }
-                if (hasEmptyFile) {
-                    alert('Error: Por favor, selecciona un archivo para cada campo de subida.');
-                    return;
-                }
+
+                // If it's a single file upload, the 'required' attribute on the input field handles validation.
 
                 fetch(actionUrl, {
                     method: 'POST',
                     body: formData
                 })
-                .then(response => response.text())
+                .then(response => {
+                    // Check if the response is valid
+                    if (!response.ok) {
+                        throw new Error('Server error: ' + response.status);
+                    }
+                    return response.text(); // Parse response as text
+                })
                 .then(html => {
-                    document.getElementById(targetId).innerHTML = html;
+                    // Check if the response is valid HTML/Content. Otherwise, show an error.
+                    if (html && html.trim().length > 0) {
+                        document.getElementById(targetId).innerHTML = html;
+                    } else {
+                        throw new Error('Empty or invalid server response.');
+                    }
                     initTabs('subTabEmpresas', 'activeSubTabEmpresas');
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    document.getElementById(targetId).innerHTML = '<div class="alert alert-danger mt-3">Ocurrió un error al procesar la solicitud.</div>';
+                    document.getElementById(targetId).innerHTML = '<div class="alert alert-danger mt-3">Ocurrió un error al procesar la solicitud: ' + error.message + '</div>';
                 });
             }
 
