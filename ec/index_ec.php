@@ -77,16 +77,19 @@
                 <div class="tab-pane fade show active" id="empresas" role="tabpanel" aria-labelledby="empresas-tab">
                     <ul class="nav nav-tabs mb-3" id="subTabEmpresas" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="concurso-unico-tab-emp" data-bs-toggle="tab" data-bs-target="#concurso-unico-emp" type="button" role="tab" aria-controls="concurso-unico-emp" aria-selected="true">Historial Concurso Unico</button>
+                            <button class="nav-link active" id="concurso-unico-tab-emp" data-bs-toggle="tab" data-bs-target="#concurso-unico-emp" type="button" role="tab" aria-controls="concurso-unico-emp" aria-selected="true">CC Concurso Unico</button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="multiconcurso-tab-emp" data-bs-toggle="tab" data-bs-target="#multiconcurso-emp" type="button" role="tab" aria-controls="multiconcurso-emp" aria-selected="false">Historiales Multiconcurso</button>
+                            <button class="nav-link" id="multiconcurso-tab-emp" data-bs-toggle="tab" data-bs-target="#multiconcurso-emp" type="button" role="tab" aria-controls="multiconcurso-emp" aria-selected="false">CC Multiconcurso</button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="concurso-atributos-tab-emp" data-bs-toggle="tab" data-bs-target="#concurso-atributos-emp" type="button" role="tab" aria-controls="concurso-atributos-emp" aria-selected="false">Historial Concurso Atributos</button>
+                            <button class="nav-link" id="concurso-atributos-tab-emp" data-bs-toggle="tab" data-bs-target="#concurso-atributos-emp" type="button" role="tab" aria-controls="concurso-atributos-emp" aria-selected="false">CC Concurso Atributos</button>
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="reclutamiento-individual-tab" data-bs-toggle="tab" data-bs-target="#reclutamiento-individual" type="button" role="tab" aria-controls="reclutamiento-individual" aria-selected="false">CC Reclutamiento Individual</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="multiconcurso-rec-tab-emp" data-bs-toggle="tab" data-bs-target="#multiconcurso-rec-emp" type="button" role="tab" aria-controls="multiconcurso-rec-emp" aria-selected="false">CC Multiconcurso REC</button>
                         </li>
                     </ul>
                     <div class="tab-content" id="subTabEmpresasContent">
@@ -154,6 +157,27 @@
                                 </div>
                             </form>
                         </div>
+                        <div class="tab-pane fade" id="multiconcurso-rec-emp" role="tabpanel" aria-labelledby="multiconcurso-rec-tab-emp">
+                            <h3 class="text-xl font-bold text-center mt-4 mb-2">Analizar Múltiples Concursos REC</h3>
+                            <p class="text-center text-red-500 font-bold text-sm mb-4">Los archivos deben cargarse en un orden específico, comenzando por el que corresponde al cargo con la remuneración más alta.</p>
+                            <form id="form-multiconcurso-rec-emp" action="analizar_multiconcurso_rec.php" method="post" enctype="multipart/form-data">
+                                <div id="file-inputs-container-rec-emp" class="mb-4">
+                                    <label class="form-label block text-sm font-medium text-gray-700 mb-2">Selecciona los archivos Excel (.xls o .xlsx)</label>
+                                    <div class="file-input-group flex space-x-2">
+                                        <input class="form-control block w-full px-3 py-2 text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" type="file" name="archivos_xls_multi_rec[]" accept=".xls, .xlsx" required>
+                                        <button type="button" class="btn btn-danger btn-sm flex-shrink-0" onclick="removeFileInput(this)">-</button>
+                                    </div>
+                                </div>
+                                <div class="flex justify-end mb-4">
+                                    <button type="button" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" id="add-file-button-rec-emp">Añadir otro archivo</button>
+                                </div>
+                                <div>
+                                    <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                        Analizar Múltiples Concursos REC
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -206,6 +230,9 @@
                 document.getElementById('form-multiconcurso-emp').addEventListener('submit', function(event) {
                     handleFormSubmit(event, 'multiconcurso-emp', 'analizar_multiconcurso.php', true);
                 });
+                document.getElementById('form-multiconcurso-rec-emp').addEventListener('submit', function(event) {
+                    handleFormSubmit(event, 'multiconcurso-rec-emp', 'analizar_multiconcurso_rec.php', true);
+                });
                 document.getElementById('form-concurso-atributos-emp').addEventListener('submit', function(event) {
                     handleFormSubmit(event, 'concurso-atributos-emp', 'analizar_atributos.php');
                 });
@@ -216,12 +243,12 @@
 
             showMainContent();
             
-            function addFileInput(containerId) {
+            function addFileInput(containerId, inputName) {
                 var container = document.getElementById(containerId);
                 var newFileInputGroup = document.createElement('div');
                 newFileInputGroup.className = 'file-input-group flex space-x-2';
                 newFileInputGroup.innerHTML = `
-                    <input class="form-control block w-full px-3 py-2 text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" type="file" name="archivos_xls_multi[]" accept=".xls, .xlsx" required>
+                    <input class="form-control block w-full px-3 py-2 text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" type="file" name="${inputName}" accept=".xls, .xlsx" required>
                     <button type="button" class="btn btn-danger btn-sm flex-shrink-0" onclick="removeFileInput(this)">-</button>
                 `;
                 container.appendChild(newFileInputGroup);
@@ -284,7 +311,11 @@
             }
 
             document.getElementById('add-file-button-emp').addEventListener('click', function() {
-                addFileInput('file-inputs-container-emp');
+                addFileInput('file-inputs-container-emp', 'archivos_xls_multi[]');
+            });
+
+            document.getElementById('add-file-button-rec-emp').addEventListener('click', function() {
+                addFileInput('file-inputs-container-rec-emp', 'archivos_xls_multi_rec[]');
             });
         });
     </script>
