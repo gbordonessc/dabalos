@@ -97,10 +97,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 
             <div class="card shadow-sm" style="width: 18rem;">
                 <div class="card-body text-center">
-<<<<<<< HEAD
                     <h5 class="card-title fw-bold">Automatización (prototipo 09-09-2025)</h5>
-=======
-                    <h5 class="card-title fw-bold">Automatización (prototipo)</h5>
                     <p class="card-text text-muted">Accede a las herramientas de automatización y prototipos.</p>
                     <a href="automatizacion/index_auto.php" class="btn btn-primary bg-blue-600 hover:bg-blue-700 w-100">Ir al Sitio</a>
                 </div>
