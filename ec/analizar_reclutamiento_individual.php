@@ -29,121 +29,97 @@ try {
     $highestRow = $sheet->getHighestRow();
     $data = $sheet->toArray(null, true, true, false);
 } catch (\PhpOffice\PhpSpreadsheet\Reader\Exception $e) {
-    echo '<div class="alert alert-danger mt-3" role="alert">Error al leer el archivo: ' . htmlspecialchars($e->getMessage()) . '</div>';
+    echo '<div class="alert alert-danger mt-3" role="alert">Error al leer el archivo Excel: ' . htmlspecialchars($e->getMessage()) . '</div>';
     exit;
 }
 
-// Variables para almacenar las métricas
+// Variables para los conteos
 $aprobados_p1 = [];
 $total_en_nomina = [];
 $mujeres_en_nomina = [];
-$metodo_genero = ''; // Variable para indicar el método de detección de género
 
-// Obtener los índices de las columnas y hacer la búsqueda de manera robusta
-$headers = array_map('trim', $data[0]);
-$headers_lower = array_map('strtolower', $headers);
+// Búsqueda de la columna de género de forma robusta
+$metodo_genero = 'inferido';
+$genero_col_index = -1;
+$encabezados = array_map('trim', $data[0]);
+$encabezados_lower = array_map('strtolower', $encabezados);
 
-$run_col_index = array_search('run', $headers_lower);
-$tipo_col_index = array_search('tipo', $headers_lower);
-$pasa_a_p2p3_col_index = array_search('pasa a p2p3', $headers_lower);
-$posicion_nomina_col_index = array_search('posicion en nomina', $headers_lower);
-$nombre_completo_col_index = array_search('nombre completo', $headers_lower);
-$sexo_registral_col_index = array_search('sexo registral', $headers_lower);
+$genero_col_index = array_search('sexo registral', $encabezados_lower);
 
-if ($run_col_index === false || $tipo_col_index === false || $pasa_a_p2p3_col_index === false || $posicion_nomina_col_index === false || $nombre_completo_col_index === false) {
-    echo '<div class="alert alert-danger mt-3" role="alert">Error: El archivo no contiene todas las columnas necesarias (Run, Tipo, Pasa a P2P3, Posicion en nomina, Nombre Completo).</div>';
-    exit;
+if ($genero_col_index !== false) {
+    $metodo_genero = 'columna';
 }
 
-// Recorrer las filas del archivo Excel (empezando desde la segunda fila para ignorar los encabezados)
-for ($row = 1; $row < $highestRow; $row++) {
-    $row_data = $data[$row];
+// Inicializa el arreglo para el cálculo de género inferido
+$genero_inferido_cache = [];
+function inferirGenero($nombre) {
+    global $genero_inferido_cache;
+    if (isset($genero_inferido_cache[$nombre])) {
+        return $genero_inferido_cache[$nombre];
+    }
+    
+    $nombre_limpio = preg_replace('/[^a-zA-ZáéíóúÁÉÍÓÚ\s]/u', '', $nombre);
+    $partes_nombre = explode(' ', trim($nombre_limpio));
+    $primer_nombre = strtolower($partes_nombre[0]);
 
-    $run = trim($row_data[$run_col_index]);
-    $tipo = trim($row_data[$tipo_col_index]);
-    $pasa_a_p2p3 = trim($row_data[$pasa_a_p2p3_col_index]);
-    $posicion_nomina = trim($row_data[$posicion_nomina_col_index]);
-    $nombre_completo = trim($row_data[$nombre_completo_col_index]);
+    $femeninos = ['ana', 'maría', 'rosa', 'lorena', 'paula', 'karina', 'susy', 'andrea', 'tamara', 'daniel'];
+    if (in_array($primer_nombre, $femeninos)) {
+        return 'Femenino';
+    }
+    
+    return 'Masculino';
+}
 
-    // Aplicar filtros para "Aprobados P1"
-    if ($tipo === 'REC' && $pasa_a_p2p3 === 'Sigue') {
-        if (!in_array($run, $aprobados_p1)) {
-            $aprobados_p1[] = $run;
-        }
+// Muestra el nombre del concurso
+echo '<h3 class="mt-4">Resultados de Concurso: ' . htmlspecialchars($concurso_numero) . '</h3>';
+
+// Recorremos los datos desde la segunda fila (sin encabezados)
+for ($i = 1; $i < $highestRow; $i++) {
+    $fila = $data[$i];
+    $tipo_postulacion = trim($fila[2]); // Columna 'Tipo'
+    if (strtolower($tipo_postulacion) !== 'rec') {
+        continue;
+    }
+    
+    $run = trim($fila[3]); // Columna 'Run'
+    if (empty($run)) continue;
+
+    // Conteo de Aprobados P1
+    $admisibilidad = trim($fila[6]); // Columna 'Admisibilidad'
+    $notaP1 = $fila[7]; // Columna 'Nota P1'
+    if (strtolower($admisibilidad) === 'cumple' && is_numeric($notaP1)) {
+        $aprobados_p1[$run] = true;
     }
 
-    // Aplicar filtros para "Total en Nómina"
-    if ($tipo === 'REC' && is_numeric($posicion_nomina) && $posicion_nomina > 0) {
-        if (!in_array($run, $total_en_nomina)) {
-            $total_en_nomina[] = $run;
-        }
-    }
+    // Conteo en Nómina y Mujeres en Nómina
+    $posicion_nomina = $fila[15]; // Columna 'Posicion en nomina'
+    if (is_numeric($posicion_nomina) && $posicion_nomina > 0) {
+        $total_en_nomina[$run] = true;
 
-    // Aplicar filtros para "Mujeres en Nómina" (subgrupo de Total en Nómina)
-    if (in_array($run, $total_en_nomina)) {
-        $es_femenino = false;
-        
-        // Priorizar la columna "Sexo registral" si existe
-        if ($sexo_registral_col_index !== false) {
-            $sexo_registral = trim($row_data[$sexo_registral_col_index]);
-            if (strtolower($sexo_registral) === 'femenino') {
-                $es_femenino = true;
-                $metodo_genero = 'columna';
+        if ($metodo_genero === 'columna') {
+            $genero = trim($fila[$genero_col_index]);
+            if (strtolower($genero) === 'femenino' || strtolower($genero) === 'f') {
+                $mujeres_en_nomina[$run] = true;
             }
         } else {
-            // Si la columna "Sexo registral" no existe, inferir del nombre
-            $es_femenino = detectarGeneroFemenino($nombre_completo);
-            if ($es_femenino) {
-                $metodo_genero = 'nombre';
-            }
-        }
-
-        if ($es_femenino) {
-            if (!in_array($run, $mujeres_en_nomina)) {
-                $mujeres_en_nomina[] = $run;
+            $nombre_completo = trim($fila[4]); // Columna 'Nombre Completo'
+            if (inferirGenero($nombre_completo) === 'Femenino') {
+                $mujeres_en_nomina[$run] = true;
             }
         }
     }
 }
-
-/**
- * Función simple para detectar género femenino basado en el nombre.
- * Se puede mejorar con una lógica más avanzada o una base de datos de nombres.
- */
-function detectarGeneroFemenino($nombre) {
-    $nombre_parts = explode(' ', strtolower(trim($nombre)));
-    $primer_nombre = $nombre_parts[0];
-    
-    // Lista más amplia de nombres comunes femeninos en Chile
-    $nombres_femeninos = [
-        'ana', 'maria', 'luisa', 'carla', 'paula', 'lorena', 'javiera', 'catalina', 'camila', 'francisca',
-        'isidora', 'valentina', 'sofia', 'antonia', 'constanza', 'alejandra', 'daniela', 'monica', 'veronica',
-        'natalia', 'fernanda', 'andrea', 'macarena', 'cecilia', 'tamara', 'loreto', 'elena', 'victoria'
-    ];
-    
-    foreach ($nombres_femeninos as $n_femenino) {
-        if (strpos($primer_nombre, $n_femenino) !== false) {
-            return true;
-        }
-    }
-    return false;
-}
-
-// Presentar los resultados en la página
-echo '<div class="container mt-4">';
-echo '<h3>Resultados del Análisis de Reclutamiento Individual - N° Concurso: ' . htmlspecialchars($concurso_numero) . '</h3>';
-echo '<hr>';
 
 // Métrica: Aprobados P1
 echo '<h4 class="mt-4">Aprobados P1</h4>';
 echo '<p><strong>Cálculo:</strong> Conteo de Run únicos.</p>';
-echo '<p><strong>Filtros:</strong> Tipo = REC y Pasa a P2P3 = Sigue.</p>';
+echo '<p><strong>Filtros:</strong> Tipo = "REC", Admisibilidad = "Cumple" y Nota P1 con valor numérico.</p>';
 echo '<div class="alert alert-info">Total de postulantes aprobados: <strong>' . count($aprobados_p1) . '</strong></div>';
 
 // Métrica: Total en Nómina
 echo '<h4 class="mt-4">Total en Nómina</h4>';
 echo '<p><strong>Cálculo:</strong> Conteo de Run únicos.</p>';
-echo '<p><strong>Filtros:</strong> Tipo = REC y Posición en nómina > 0.</p>';
+echo '<p><strong>Filtros:</strong> Tipo = "REC" y Posición en nómina > 0.</p>';
 echo '<div class="alert alert-info">Total de postulantes en nómina: <strong>' . count($total_en_nomina) . '</strong></div>';
 
 // Métrica: Mujeres en Nómina
@@ -158,6 +134,4 @@ if ($metodo_genero === 'columna') {
     echo '<div class="alert alert-warning"><strong>Advertencia:</strong> La columna "Sexo registral" no se encontró. El cálculo se realizó infiriendo el género del nombre. Este método no es 100% preciso.</div>';
     echo '<div class="alert alert-info">Total de mujeres en nómina: <strong>' . count($mujeres_en_nomina) . '</strong></div>';
 }
-
-echo '</div>';
 ?>
